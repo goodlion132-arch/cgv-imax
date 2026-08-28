@@ -1,0 +1,21 @@
+{
+  "theater": {
+    "name": "CGV 인천",
+    "site_no": "0002"
+  },
+  "movie_keywords": [
+    "오디세이",
+    "The Odyssey",
+    "ODYSSEY"
+  ],
+  "screen_keywords": [
+    "IMAX",
+    "아이맥스"
+  ],
+  "watch": {
+    "full_scan_days": 30,
+    "fast_window_start_days": 17,
+    "fast_window_end_days": 24,
+    "request_gap_seconds": 1.2
+  }
+}
