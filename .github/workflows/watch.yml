@@ -1,0 +1,68 @@
+name: CGV 인천 IMAX 감시
+
+on:
+  schedule:
+    # GitHub Actions의 최소 예약 간격은 5분.
+    # 정시 혼잡을 피하려고 매시 2,7,12,...,57분에 예약한다.
+    - cron: "2-57/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cgv-incheon-imax-watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 저장소 받기
+        uses: actions/checkout@v4
+
+      - name: Python 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Playwright 브라우저 캐시
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-1.48
+
+      - name: Python 패키지 설치
+        run: pip install --quiet -r requirements.txt
+
+      - name: Chromium 설치
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: python -m playwright install --with-deps chromium
+
+      - name: Chromium 시스템 의존성 확인
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: python -m playwright install-deps chromium
+
+      - name: CGV 확인
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: python cloud_watch.py
+
+      - name: 상태 저장
+        if: always()
+        run: |
+          if [ -n "$(git status --porcelain state.json)" ]; then
+            git config user.name "cgv-imax-watch"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add state.json
+            git commit -m "state: update CGV snapshot" || true
+
+            # 앞선 실행과 겹쳐 원격 state가 먼저 바뀐 경우를 대비.
+            for i in 1 2 3; do
+              git pull --rebase --autostash origin "${GITHUB_REF_NAME}" && git push && break
+              sleep 5
+            done
+          fi
