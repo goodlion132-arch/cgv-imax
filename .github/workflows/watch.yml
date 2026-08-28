@@ -2,8 +2,6 @@ name: CGV 인천 IMAX 감시
 
 on:
   schedule:
-    # GitHub Actions의 최소 예약 간격은 5분.
-    # 정시 혼잡을 피하려고 매시 2,7,12,...,57분에 예약한다.
     - cron: "2-57/5 * * * *"
   workflow_dispatch:
 
@@ -60,7 +58,6 @@ jobs:
             git add state.json
             git commit -m "state: update CGV snapshot" || true
 
-            # 앞선 실행과 겹쳐 원격 state가 먼저 바뀐 경우를 대비.
             for i in 1 2 3; do
               git pull --rebase --autostash origin "${GITHUB_REF_NAME}" && git push && break
               sleep 5
